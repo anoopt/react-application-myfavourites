@@ -25,10 +25,14 @@ export default class MyFavoutiteDisplayItem extends React.Component<IMyFavoutite
         let { isDeleteBubbleVisible } = this.state;
         let deleteButtonProps: IButtonProps = {
             children: 'Yes',
+            iconProps: { iconName: 'Accept' },
+            className: styles.ccDeleteBubbleButton,
             onClick: this._deleteFavourite.bind(this)
           };
           let deleteCancelButtonProps: IButtonProps = {
             children: 'No',
+            className: styles.ccDeleteBubbleButton,
+            iconProps: { iconName: 'Cancel' },
             onClick: this._onBubbleDismiss.bind(this)
           };
         return (

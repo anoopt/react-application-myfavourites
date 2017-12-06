@@ -1,6 +1,7 @@
 import { IMyFavouriteItem } from "../../../interfaces/IMyFavouriteItem";
 
 export interface IMyFavouritesTopBarState {
+    loading: boolean;
     showPanel: boolean;
     showDialog: boolean;
     dialogTitle: string;
@@ -8,5 +9,6 @@ export interface IMyFavouritesTopBarState {
     itemInContext: IMyFavouriteItem;
     isEdit: boolean;
     status: JSX.Element;
-    disableButtons: boolean;
+    disableSave: boolean;
+    disableCancel: boolean;
 }

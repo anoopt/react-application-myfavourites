@@ -104,8 +104,15 @@ html[dir='rtl'] .ccStatus {
 .ccButton:hover, .ccTopBarButton:hover, .ccDialogButton:hover{
     background-color: $themeSecondary;
 }
+.ccButton:disabled, .ccDialogButton:disabled{
+    background-color: $themeTertiary;
+}
 .ccTopBarButton, .ccDialogButton{
     margin-right: 10px;
     background-color: $themePrimary;
     color: $themeLight;
+}
+.ccDeleteBubbleButton, .ccDeleteBubbleButton span {
+    background-color: $themeLight !important;
+    color: $themePrimary !important;
 }

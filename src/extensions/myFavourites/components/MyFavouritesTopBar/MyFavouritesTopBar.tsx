@@ -19,9 +19,12 @@ export default class MyFavouritesTopBar extends React.Component<IMyFavouritesTop
     private _self = this;
     private _MyFavouritesServiceInstance: MyFavouritesService;
     private _MyFavouriteItems: IMyFavouriteItem[] =[];
+    private _EmptyMessageBarText: string = "";
+    private _AnimationClass: string = "ms-slideDownIn20";
     constructor(props: IMyFavouritesTopBarProps) {
         super(props);
         this.state = {
+            loading: true,
             showPanel: false,
             showDialog: false,
             dialogTitle: "",
@@ -33,7 +36,8 @@ export default class MyFavouritesTopBar extends React.Component<IMyFavouritesTop
             },
             isEdit: false,
             status: <Spinner size={SpinnerSize.large} label="Loading..." />,
-            disableButtons: false
+            disableSave: true,
+            disableCancel: false
         };
 
         this._MyFavouritesServiceInstance = new MyFavouritesService(this.props);
@@ -67,23 +71,26 @@ export default class MyFavouritesTopBar extends React.Component<IMyFavouritesTop
                     isLightDismiss={ true }
                 >
                     <div data-id="menuPanel">
-                    <TextField placeholder="Filter favourites..."
-                               iconProps={ { iconName: "Filter" } }
-                               onBeforeChange={ this._onFilterChanged.bind(this) } />
+                        <TextField placeholder="Filter favourites..."
+                            iconProps={ { iconName: "Filter" } }
+                            onBeforeChange={ this._onFilterChanged.bind(this) } />
                         <div>
                             {this.state.status}
                         </div>
                         <FocusZone direction={ FocusZoneDirection.vertical }>
-                        { this.state.myFavouriteItems.length > 0 ? 
+                        { this.state.myFavouriteItems.length > 0 ?
                             <List
                                 items = { this.state.myFavouriteItems }
                                 onRenderCell={ this._onRenderCell.bind(this) }
                             /> :
+                            !this.state.loading ?
                             <MessageBar
+                                className={this._AnimationClass}
                                 messageBarType={ MessageBarType.warning }
                                 isMultiline={ false }>
-                                You do not have any favourites.
-                            </MessageBar>
+                                {this._EmptyMessageBarText}
+                            </MessageBar> :
+                            null
                         }
                         </FocusZone>
                     </div>
@@ -107,18 +114,19 @@ export default class MyFavouritesTopBar extends React.Component<IMyFavouritesTop
                     </div>
                     <TextField label="Title"
                                onChanged={this._setTitle.bind(this)}
-                               value={this.state.itemInContext.Title} />
+                               value={this.state.itemInContext.Title}
+                               required={ true } />
                     <TextField label="Description"
                                 multiline rows={4}
                                 onChanged={this._setDescription.bind(this)}
                                 value={this.state.itemInContext.Description} />
                     <DialogFooter>
                         <PrimaryButton onClick={this._saveMyFavourite.bind(this)}
-                                       disabled={this.state.disableButtons}
+                                       disabled={this.state.disableSave}
                                        text="Save" iconProps={{ iconName: "Save" }}
                                        className={styles.ccDialogButton}/>
                         <DefaultButton onClick={this._hideDialog.bind(this)}
-                                       disabled={this.state.disableButtons}
+                                       disabled={this.state.disableCancel}
                                        text="Cancel"
                                        iconProps={{ iconName: "Cancel" }} />
                     </DialogFooter>
@@ -139,23 +147,30 @@ export default class MyFavouritesTopBar extends React.Component<IMyFavouritesTop
         console.log(favouriteItem);
         let status: JSX.Element = <span></span>;
         let dialogTitle: string = "Edit favourite";
-        this.setState({ ...this.state, showPanel: false, itemInContext: favouriteItem, isEdit: true, showDialog: true, dialogTitle, status });
+        this.setState({ ...this.state, showPanel: false, itemInContext: favouriteItem, isEdit: true, showDialog: true, dialogTitle, status, disableSave: false });
     }
 
     private async _getMyFavourites(): Promise<void> {
         let status: JSX.Element = <Spinner size={SpinnerSize.large} label='Loading...' />;
-        this.setState({ ...this.state, status });
+        let loading: boolean = true;
+        this.setState({ ...this.state, status, loading });
 
         const myFavouriteItems: IMyFavouriteItem[] = await this._MyFavouritesServiceInstance.getMyFavourites(true);
         this._MyFavouriteItems = myFavouriteItems;
         status = <span></span>;
-        this.setState({ ...this.state, myFavouriteItems, status });
+        loading = false;
+        if(myFavouriteItems.length === 0) {
+            this._EmptyMessageBarText = "You do not have any favourites";
+        }
+        this.setState({ ...this.state, myFavouriteItems, status, loading });
     }
 
     private async _saveMyFavourite(): Promise<void> {
-        let status: JSX.Element = <Spinner size={SpinnerSize.large} label='Loading...' />;
-        let disableButtons: boolean = true;
-        this.setState({ ...this.state, status, disableButtons });
+        let loadingText: string = this.state.isEdit ? "Updating..." : "Adding...";
+        let status: JSX.Element = <Spinner size={SpinnerSize.large} label={loadingText} />;
+        let disableSave: boolean = true;
+        let disableCancel: boolean = true;
+        this.setState({ ...this.state, status, disableSave, disableCancel });
         let itemToSave: IMyFavouriteItem = {
             Title: this.state.itemInContext.Title,
             Description: this.state.itemInContext.Description
@@ -175,8 +190,8 @@ export default class MyFavouritesTopBar extends React.Component<IMyFavouritesTop
                         There was an error!
                     </MessageBar>;
         }
-        disableButtons = false;
-        this.setState({ ...this.state, status, disableButtons });
+        disableSave = disableCancel = false;
+        this.setState({ ...this.state, status, disableSave, disableCancel });
     }
     //#endregion
 
@@ -199,7 +214,8 @@ export default class MyFavouritesTopBar extends React.Component<IMyFavouritesTop
         let isEdit: boolean = false;
         let status: JSX.Element = <span></span>;
         let dialogTitle: string = "Add to my favourites";
-        this.setState({ ...this.state, itemInContext, isEdit, showDialog: true, dialogTitle, status });
+        let disableSave: boolean = true;
+        this.setState({ ...this.state, itemInContext, isEdit, showDialog: true, dialogTitle, status, disableSave });
     }
 
     private _hideDialog(): void {
@@ -207,9 +223,8 @@ export default class MyFavouritesTopBar extends React.Component<IMyFavouritesTop
     }
 
     private _onRenderCell(myFavouriteItem: IMyFavouriteItem, index: number | undefined): JSX.Element {
-        let animationClass: string = `ms-slideDownIn20`;
         return (
-            <div className={`${animationClass} ${styles.ccitemCell}`} data-is-focusable={ true }>
+            <div className={`${this._AnimationClass} ${styles.ccitemCell}`} data-is-focusable={ true }>
                  <MyFavoutiteDisplayItem
                     displayItem={myFavouriteItem}
                     deleteFavourite={this.deleteFavourite.bind(this)}
@@ -220,6 +235,7 @@ export default class MyFavouritesTopBar extends React.Component<IMyFavouritesTop
 
     private _onFilterChanged(text: string): void {
         let items: IMyFavouriteItem[] = this._MyFavouriteItems;
+        this._EmptyMessageBarText = "There are no favourites which match the search text.";
         this.setState({
             myFavouriteItems: text ?
             items.filter(item => item.Title.toLowerCase().indexOf(text.toLowerCase()) >= 0) :
@@ -232,7 +248,11 @@ export default class MyFavouritesTopBar extends React.Component<IMyFavouritesTop
     private _setTitle(value: string): void {
         let itemInContext: IMyFavouriteItem = this.state.itemInContext;
         itemInContext.Title = value;
-        this.setState({ ...this.state, itemInContext });
+        let disableSave: boolean = true;
+        if(value.length > 0) {
+            disableSave = false;
+        }
+        this.setState({ ...this.state, itemInContext, disableSave });
     }
 
     private _setDescription(value: string): void {
